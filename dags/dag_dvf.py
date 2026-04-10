@@ -24,6 +24,7 @@ WEBHDFS_USER = "root"
 HDFS_RAW_PATH = "/data/dvf/raw"
 POSTGRES_CONN_ID = "dvf_postgres"
 TARGET_DEPARTEMENTS = ["75", "92"]
+PARIS_POSTAL_CODES = [f"750{str(i).zfill(2)}" for i in range(1, 21)] + ["75116"]
 
 default_args = {
     "owner": "data-engineering",
@@ -315,7 +316,7 @@ def pipeline_dvf():
         df = df[df["nature_mutation"] == "Vente"]
         df = df[df["surface_reelle_bati"].between(9, 500, inclusive="both")]
         df = df[df["valeur_fonciere"] > 10000]
-        df = df[df["code_postal"].isin([f"750{str(i).zfill(2)}" for i in range(1, 21)] + ["75116"])]
+        df = df[df["code_postal"].isin(PARIS_POSTAL_CODES)]
         df = df[df["surface_reelle_bati"] > 0]
 
         logger.info("Filtrage DVF: %s lignes -> %s lignes", initial_rows, len(df))
