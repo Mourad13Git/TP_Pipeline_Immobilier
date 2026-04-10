@@ -1,8 +1,3 @@
-"""
-DAG : Pipeline DVF — Data Lake (HDFS) vers Data Warehouse (PostgreSQL)
-Source : Demandes de Valeurs Foncieres — data.gouv.fr
-"""
-
 from __future__ import annotations
 
 import logging
@@ -23,7 +18,6 @@ from airflow.utils.dates import days_ago
 
 logger = logging.getLogger(__name__)
 
-# ── Constantes ────────────────────────────────────────────────────────────────
 DVF_DATASET_API_URL = "https://www.data.gouv.fr/api/1/datasets/demandes-de-valeurs-foncieres/"
 WEBHDFS_BASE_URL = "http://hdfs-namenode:9870/webhdfs/v1"
 WEBHDFS_USER = "root"
@@ -31,7 +25,6 @@ HDFS_RAW_PATH = "/data/dvf/raw"
 POSTGRES_CONN_ID = "dvf_postgres"
 TARGET_DEPARTEMENTS = ["75", "92"]
 
-# ── Configuration du DAG ──────────────────────────────────────────────────────
 default_args = {
     "owner": "data-engineering",
     "depends_on_past": False,
@@ -44,7 +37,7 @@ default_args = {
 @dag(
     dag_id="pipeline_dvf_immobilier",
     description="ETL DVF : telechargement -> HDFS raw -> PostgreSQL curated",
-    schedule_interval="0 6 * * *",  # tous les jours a 6h
+    schedule_interval="0 6 * * *",
     start_date=days_ago(1),
     catchup=False,
     default_args=default_args,
@@ -196,8 +189,6 @@ def pipeline_dvf():
             if os.path.exists(dept_local_paths[dept]):
                 os.remove(dept_local_paths[dept])
 
-        # Partitionne localement le fichier DVF par departement sans charger
-        # l'ensemble en memoire.
         for chunk in pd.read_csv(local_path, sep="|", dtype=str, chunksize=200_000, low_memory=False):
             if "Code departement" not in chunk.columns:
                 raise AirflowException("Colonne 'Code departement' absente du fichier DVF.")
@@ -261,7 +252,6 @@ def pipeline_dvf():
             hdfs_uploaded_paths[dept] = hdfs_file_path
             logger.info("Fichier partitionne upload vers HDFS: %s", hdfs_file_path)
 
-        # Nettoyage local
         if os.path.exists(local_path):
             os.remove(local_path)
         for path in dept_local_paths.values():
